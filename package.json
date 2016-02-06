@@ -1,0 +1,33 @@
+{
+  "name": "walk-cli",
+  "version": "1.0.0",
+  "description": "Commandline utility to find files and directories by name, ext or regex. Can be used as a node module as well.",
+  "main": "walk.js",
+  "bin": {
+    "walk": "walk-cli"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/nojvek/walk-cli"
+  },
+  "keywords": [
+    "find",
+    "walk",
+    "cli",
+    "command line",
+    "dive",
+    "node",
+    "files",
+    "directories",
+    "regex"
+  ],
+  "author": "nojvek",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nojvek/walk-cli/issues"
+  },
+  "homepage": "https://github.com/nojvek/walk-cli",
+  "dependencies": {
+    "options-parser": "^0.4.0"
+  }
+}
