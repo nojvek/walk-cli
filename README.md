@@ -22,7 +22,7 @@ Usage: walk [options (VAL = y|n)]
 ```
 
 ## Module Usage
-```
+```javascript
 var walk = require('walk-cli');
 
 String.prototype.repeat = function(n) {
