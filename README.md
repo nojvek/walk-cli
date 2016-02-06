@@ -23,6 +23,8 @@ Usage: walk [options (VAL = y|n)]
 
 ## Module Usage
 ```
+var walk = require('walk-cli');
+
 String.prototype.repeat = function(n) {
   return Array(n + 1).join(this);
 };
@@ -38,9 +40,9 @@ var walkOpts = {
 
 walk(walkOpts, function(path, name, level) {
   if (walkOpts.tree) {
-    return c.log("  ".repeat(level), name);
+    return console.log("  ".repeat(level), name);
   } else {
-    return c.log(path);
+    return console.log(path);
   }
 })
 ```
