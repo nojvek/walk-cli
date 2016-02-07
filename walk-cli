@@ -1,9 +1,11 @@
 #!/usr/bin/env node
-var c, errors, help, options, opts, parseArgs, walk, walkOpts;
+var c, errors, exec, help, options, opts, parseArgs, walk, walkCount, walkOpts;
 
 options = require('options-parser');
 
 walk = require('./walk');
+
+exec = require('child_process').exec;
 
 c = console;
 
@@ -37,16 +39,25 @@ opts = {
     "default": 'y'
   },
   name: {
-    help: "Only show files matching regex filter. e.g -name ^walk",
+    help: "Only show files or directories matching regex filter. e.g -name ^walk",
     short: 'n'
   },
   ignore: {
-    help: "ignore files or folder matching regex filter. e.g -i '.git|node_modules'",
+    help: "ignore files or directories matching regex filter. e.g -i '.git|node_modules'",
     short: 'i'
   },
   ext: {
     help: "Only show files matching extension. e.g -e js",
     short: 'e'
+  },
+  maxDepth: {
+    help: "Only recurse until a specific depth. e.g -m 3",
+    short: 'm'
+  },
+  exec: {
+    help: "For each entry execute following command. e.g -x 'echo $i $name $path $level $size $mtime' -x 'cat $path'.",
+    short: 'x',
+    multi: true
   },
   tree: {
     help: "Show output as indented tree?",
@@ -89,6 +100,12 @@ parseArgs = function() {
     }
     args[arg] = val;
   }
+  if (args.tree) {
+    args.dirs = true;
+  }
+  if (args.maxDepth) {
+    args.maxDepth = parseInt(args.maxDepth);
+  }
   if (errors.length) {
     c.error("Invalid arguments");
     c.error(errors.join("\n"));
@@ -106,10 +123,44 @@ parseArgs = function() {
 
 walkOpts = parseArgs();
 
-walk(walkOpts, function(path, name, level) {
+walkCount = 0;
+
+walk(walkOpts, function(path, name, level, stat) {
+  var cmd, i, key, len, ref, replacers, results, val;
   if (walkOpts.tree) {
-    return c.log("  ".repeat(level), name);
+    return c.log("|  ".repeat(level) + name);
   } else {
-    return c.log(path);
+    if (walkOpts.exec) {
+      walkCount += 1;
+      replacers = {
+        i: walkCount,
+        path: path,
+        name: name,
+        level: level,
+        size: stat.size,
+        mtime: stat.mtime.getTime() / 1000,
+        ctime: stat.ctime.getTime() / 1000
+      };
+      ref = walkOpts.exec;
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        cmd = ref[i];
+        for (key in replacers) {
+          val = replacers[key];
+          cmd = cmd.replace(new RegExp("\\$" + key, "g"), val);
+        }
+        results.push(exec(cmd, function(error, stdout, stderr) {
+          if (stdout) {
+            process.stdout.write(stdout);
+          }
+          if (stderr) {
+            return process.stderr.write(stderr);
+          }
+        }));
+      }
+      return results;
+    } else {
+      return c.log(path);
+    }
   }
 });

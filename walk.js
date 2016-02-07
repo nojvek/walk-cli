@@ -32,8 +32,8 @@ walk = function(opts, callback) {
   if (opts.symLinks === void 0) {
     opts.symLinks = true;
   }
-  if (opts.tree === void 0) {
-    opts.tree = false;
+  if (isNaN(opts.maxDepth)) {
+    opts.maxDepth = Number.MAX_VALUE;
   }
   if (opts.ignore) {
     opts.excludeFilter = new RegExp("" + opts.ignore, "i");
@@ -51,7 +51,10 @@ walk = function(opts, callback) {
 };
 
 walkDir = function(opts, callback, dirPath, level) {
-  var dirContents, dirFullPath, exclude, fullPath, i, include, itemName, itemPath, len, results, stat;
+  var dirContents, dirFullPath, e, exclude, fullPath, i, include, itemName, itemPath, len, results, stat;
+  if (level >= opts.maxDepth) {
+    return;
+  }
   dirFullPath = fsPath.resolve(opts.root, dirPath);
   if (!fs.existsSync(dirFullPath)) {
     return c.error(dirFullPath, "doesn't exist");
@@ -64,18 +67,27 @@ walkDir = function(opts, callback, dirPath, level) {
     itemName = dirContents[i];
     fullPath = fsPath.resolve(dirFullPath, itemName);
     itemPath = dirPath ? dirPath + fsPath.sep + itemName : itemName;
-    stat = fs.lstatSync(fullPath);
+    try {
+      stat = fs.lstatSync(fullPath);
+    } catch (_error) {
+      e = _error;
+      continue;
+    }
     if ((!opts.symLinks) && stat.isSymbolicLink()) {
       continue;
     }
     if (stat.isDirectory()) {
-      if (opts.dirs || opts.tree) {
-        if ((!include || itemName.match(include)) && !(exclude && itemName.match(exclude))) {
-          callback(itemPath, itemName, level, stat);
+      if (!(exclude && itemName.match(exclude))) {
+        if (opts.dirs) {
+          if (!include || itemName.match(include)) {
+            callback(itemPath, itemName, level, stat);
+          }
         }
-      }
-      if (opts.recurse) {
-        results.push(walkDir(opts, callback, itemPath, level + 1));
+        if (opts.recurse) {
+          results.push(walkDir(opts, callback, itemPath, level + 1));
+        } else {
+          results.push(void 0);
+        }
       } else {
         results.push(void 0);
       }

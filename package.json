@@ -1,6 +1,6 @@
 {
   "name": "walk-cli",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Commandline utility to find files and directories by name, ext or regex. Can be used as a node module as well.",
   "main": "walk.js",
   "bin": {

@@ -1,5 +1,6 @@
 options = require 'options-parser'
 walk = require './walk'
+exec = require('child_process').exec
 c = console
 errors = []
 walkOpts = {}
@@ -27,16 +28,25 @@ opts =
         default: 'y'
 
     name:
-        help: "Only show files matching regex filter. e.g -name ^walk"
+        help: "Only show files or directories matching regex filter. e.g -name ^walk"
         short: 'n'
 
     ignore:
-        help: "ignore files or folder matching regex filter. e.g -i '.git|node_modules'"
+        help: "ignore files or directories matching regex filter. e.g -i '.git|node_modules'"
         short: 'i'
 
     ext:
         help: "Only show files matching extension. e.g -e js"
         short: 'e'
+
+    maxDepth:
+        help: "Only recurse until a specific depth. e.g -m 3"
+        short: 'm'
+
+    exec:
+        help: "For each entry execute following command. e.g -x 'echo $i $name $path $level $size $mtime' -x 'cat $path'."
+        short: 'x'
+        multi: true
 
     tree:
         help: "Show output as indented tree?"
@@ -63,6 +73,9 @@ parseArgs = ->
         else if val == 'n' then val = false
         args[arg] = val
 
+    if args.tree then args.dirs = true
+    if args.maxDepth then args.maxDepth = parseInt(args.maxDepth)
+
     if errors.length
         c.error "Invalid arguments"
         c.error errors.join("\n")
@@ -80,9 +93,31 @@ parseArgs = ->
 walkOpts = parseArgs()
 #c.log walkOpts
 
-walk walkOpts, (path, name, level) ->
-    if walkOpts.tree then c.log "  ".repeat(level), name
-    else c.log path
+walkCount = 0
+walk walkOpts, (path, name, level, stat) ->
+    if walkOpts.tree then c.log "|  ".repeat(level) + name
+    else
+        if walkOpts.exec
+            walkCount += 1
+            replacers =
+                i : walkCount
+                path: path
+                name: name
+                level: level
+                size: stat.size
+                mtime: stat.mtime.getTime() / 1000
+                ctime: stat.ctime.getTime() / 1000
+
+            for cmd in walkOpts.exec
+                for key, val of replacers
+                    cmd = cmd.replace(new RegExp("\\$#{key}", "g"), val)
+
+                exec cmd, (error, stdout, stderr) ->
+                    if stdout then process.stdout.write stdout
+                    if stderr then process.stderr.write stderr
+
+        else
+            c.log path
 
 #c.log errors
 
