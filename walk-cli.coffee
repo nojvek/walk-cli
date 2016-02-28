@@ -1,7 +1,10 @@
+fsPath = require 'path'
+execSync = require('child_process').execSync
 options = require 'options-parser'
 walk = require './walk'
-exec = require('child_process').exec
 c = console
+
+pathEscRegExp = new RegExp("([^\\w\\-\\.\\#{fsPath.sep}])","g")
 errors = []
 walkOpts = {}
 String::repeat = (n) -> Array(n + 1).join(this)
@@ -44,7 +47,12 @@ opts =
         short: 'm'
 
     exec:
-        help: "For each entry execute following command. e.g -x 'echo $i $name $path $level $size $mtime' -x 'cat $path'."
+        help: "For each entry execute a command. e.g -X 'echo $i $path $dir $base $name.$ext $level $size $mtime $ctime' -X 'cat $path'."
+        short: 'X'
+        multi: true
+
+    echo:
+        help: "For each entry output variable transform. e.g -x '$i $path $dir $base $name $ext $level $size $mtime $ctime'"
         short: 'x'
         multi: true
 
@@ -94,30 +102,35 @@ walkOpts = parseArgs()
 #c.log walkOpts
 
 walkCount = 0
-walk walkOpts, (path, name, level, stat) ->
+walk walkOpts, (path, file, level, stat) ->
     if walkOpts.tree then c.log "|  ".repeat(level) + name
     else
-        if walkOpts.exec
+        if walkOpts.exec or walkOpts.echo
             walkCount += 1
+            #path = path.replace(pathEscRegExp,"\\$1") #escape non-word characters
+            parsed = fsPath.parse(path)
             replacers =
                 i : walkCount
                 path: path
-                name: name
+                dir: parsed.dir
+                base: parsed.base
+                ext: parsed.ext
+                name: parsed.name
                 level: level
                 size: stat.size
-                mtime: stat.mtime.getTime() / 1000
-                ctime: stat.ctime.getTime() / 1000
+                mtime: Math.floor(stat.mtime.getTime() / 1000)
+                ctime: Math.floor(stat.ctime.getTime() / 1000)
 
-            for cmd in walkOpts.exec
+            commands = walkOpts.exec || walkOpts.echo
+            for cmd in commands
                 for key, val of replacers
                     cmd = cmd.replace(new RegExp("\\$#{key}", "g"), val)
 
-                exec cmd, (error, stdout, stderr) ->
-                    if stdout then process.stdout.write stdout
-                    if stderr then process.stderr.write stderr
-
+                if walkOpts.exec
+                    try process.stdout.write execSync cmd
+                    catch e then c.error e.message
+                else
+                    c.log cmd
         else
             c.log path
-
-#c.log errors
 

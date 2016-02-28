@@ -51,7 +51,7 @@ walk = function(opts, callback) {
 };
 
 walkDir = function(opts, callback, dirPath, level) {
-  var dirContents, dirFullPath, e, exclude, fullPath, i, include, itemName, itemPath, len, results, stat;
+  var dirContents, dirFullPath, e, error, exclude, fullPath, i, include, itemName, itemPath, len, results, stat;
   if (level >= opts.maxDepth) {
     return;
   }
@@ -69,8 +69,8 @@ walkDir = function(opts, callback, dirPath, level) {
     itemPath = dirPath ? dirPath + fsPath.sep + itemName : itemName;
     try {
       stat = fs.lstatSync(fullPath);
-    } catch (_error) {
-      e = _error;
+    } catch (error) {
+      e = error;
       continue;
     }
     if ((!opts.symLinks) && stat.isSymbolicLink()) {
