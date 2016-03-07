@@ -133,4 +133,4 @@ walk walkOpts, (path, file, level, stat) ->
                     c.log cmd
         else
             c.log path
-
+    return

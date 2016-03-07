@@ -1,4 +1,4 @@
-'#!/usr/bin/env node' 
+#!/usr/bin/env node
 var c, errors, execSync, fsPath, help, options, opts, parseArgs, pathEscRegExp, walk, walkCount, walkOpts;
 
 fsPath = require('path');
@@ -135,9 +135,9 @@ walkOpts = parseArgs();
 walkCount = 0;
 
 walk(walkOpts, function(path, file, level, stat) {
-  var cmd, commands, e, error1, i, key, len, parsed, replacers, results, val;
+  var cmd, commands, e, i, key, len, parsed, replacers, val;
   if (walkOpts.tree) {
-    return c.log("|  ".repeat(level) + name);
+    c.log("|  ".repeat(level) + name);
   } else {
     if (walkOpts.exec || walkOpts.echo) {
       walkCount += 1;
@@ -155,7 +155,6 @@ walk(walkOpts, function(path, file, level, stat) {
         ctime: Math.floor(stat.ctime.getTime() / 1000)
       };
       commands = walkOpts.exec || walkOpts.echo;
-      results = [];
       for (i = 0, len = commands.length; i < len; i++) {
         cmd = commands[i];
         for (key in replacers) {
@@ -164,18 +163,17 @@ walk(walkOpts, function(path, file, level, stat) {
         }
         if (walkOpts.exec) {
           try {
-            results.push(process.stdout.write(execSync(cmd)));
-          } catch (error1) {
-            e = error1;
-            results.push(c.error(e.message));
+            process.stdout.write(execSync(cmd));
+          } catch (_error) {
+            e = _error;
+            c.error(e.message);
           }
         } else {
-          results.push(c.log(cmd));
+          c.log(cmd);
         }
       }
-      return results;
     } else {
-      return c.log(path);
+      c.log(path);
     }
   }
 });
